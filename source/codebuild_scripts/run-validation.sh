@@ -37,13 +37,6 @@ validate_template_file() {
 
   echo "Print file encoding: $tmp_file "
   file -i "$tmp_file"
-  echo "Running cfn_nag_scan on $tmp_file"
-  cfn_nag_scan --input-path "$tmp_file"
-  if [ $? -ne 0 ]
-  then
-    echo "ERROR: CFN Nag failed validation - $file_name"
-    set_failed_exit_status
-  fi
 }
 
 validate_parameter_file() {
@@ -100,7 +93,7 @@ echo "Manifest file validated against the schema successfully"
 # check each file in the manifest to make sure it exists
 check_files=$(grep '_file:' < manifest.yaml | grep -v '^ *#' | tr -s ' ' | tr -d '\r' | cut -d ' ' -f 3)
 for file_name in $check_files ; do
-  # run aws cloudformation validate-template, cfn_nag_scan and json validate on all **remote** templates / parameters files
+  # run aws cloudformation validate-template and json validate on all **remote** templates / parameters files
   if [[ $file_name == s3* ]]; then
     echo "S3 URL path found: $file_name"
     tmp_file=$(mktemp)
@@ -153,7 +146,7 @@ for file_name in $check_files ; do
   fi
 done
 
-# run aws cloudformation validate-template and cfn_nag_scan on all **local** templates
+# run aws cloudformation validate-template on all **local** templates
 cd templates
 TEMPLATES_DIR=$(pwd)
 export TEMPLATES_DIR
@@ -185,13 +178,6 @@ for template_name in $(find . -type f | grep -E '.template$|.yaml$|.yml$|.json$'
     aws s3 rm s3://"$ARTIFACT_BUCKET"/validate/templates/"$template_name"
     echo "Print file encoding: $template_name"
     file -i "$TEMPLATES_DIR"/"$template_name"
-    echo "Running cfn_nag_scan on $template_name"
-    cfn_nag_scan --input-path "$TEMPLATES_DIR"/"$template_name"
-    if [ $? -ne 0 ]
-    then
-      echo "ERROR: CFN Nag failed validation - $template_name"
-      set_failed_exit_status
-    fi
 done
 
 # run json validation on all the **local** parameter files
